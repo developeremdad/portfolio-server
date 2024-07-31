@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const sendResponse = require("./utils/sendResponse");
 const jwt = require("jsonwebtoken");
 const upload = require("./utils/uploader");
@@ -118,12 +118,25 @@ async function run() {
 
     // Get all blogs
     app.get("/get-blogs", async (req, res) => {
-      const result = await collectionBlog.find({}).toArray();
+      const result = await collectionBlog.find({}).sort({ date: -1 }).toArray();
 
       sendResponse(res, {
         statusCode: 200,
         success: true,
         message: "Blogs retrieve successfully",
+        data: result,
+      });
+    });
+
+    // Get single blog
+    app.get("/get-blogs/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await collectionBlog.findOne({ _id: ObjectId(id) });
+
+      sendResponse(res, {
+        statusCode: 200,
+        success: true,
+        message: "Blog retrieve successfully",
         data: result,
       });
     });
@@ -291,30 +304,14 @@ async function run() {
     // Get single project
     app.get("/get-projects/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
-      const result = await collectionProject.find({}).toArray();
+      const result = await collectionProject.findOne({ _id: ObjectId(id) });
 
       sendResponse(res, {
         statusCode: 200,
         success: true,
-        message: "Projects retrieve successfully",
+        message: "Project retrieve successfully",
         data: result,
       });
-    });
-
-    // make admin existing user
-    app.put("/makeAdmin", async (req, res) => {
-      const user = req.body;
-      const filter = { email: user.email };
-      const findUser = await collectionUser.find(filter).toArray();
-      if (findUser) {
-        const UserDoc = {
-          $set: user,
-        };
-        const result = await collectionUser.updateOne(filter, UserDoc);
-        res.json(result);
-      }
-      res.json();
     });
   } finally {
     // await client.close();
