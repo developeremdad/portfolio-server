@@ -18,6 +18,7 @@ app.use(
       "http://localhost:5000",
       "http://localhost:5173",
       "http://localhost:3000",
+      "https://devemdad.netlify.app",
     ],
     credentials: true,
   })
@@ -30,8 +31,8 @@ cloudinary.config({
 });
 
 // DB url setting and connection
-// const uri = `mongodb+srv://${process.env.BD_USER}:${process.env.DB_PASS}@cluster0.eogpx.mongodb.net/?retryWrites=true&w=majority`;
-const uri = "mongodb://localhost:27017/portfolio";
+const uri = `mongodb+srv://${process.env.BD_USER}:${process.env.DB_PASS}@cluster0.eogpx.mongodb.net/?retryWrites=true&w=majority`;
+// const uri = "mongodb://localhost:27017";
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -77,7 +78,7 @@ async function run() {
 
         const accessToken = (token = jwt.sign(payload, "0123456789", {
           algorithm: "HS256",
-          expiresIn: "30d",
+          expiresIn: "1d",
         }));
         console.log(accessToken);
 
