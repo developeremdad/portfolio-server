@@ -8,6 +8,7 @@ const upload = require("./utils/uploader");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
 const cloudinary = require("cloudinary").v2;
+const sharp = require("sharp");
 
 // Middleware
 app.use(express.json());
@@ -196,27 +197,55 @@ async function run() {
     //   "/create-project",
     //   upload.array("images", 10),
     //   async (req, res) => {
+    //     // console.log("Files:", req.files); // Log files received
+    //     // console.log("Body:", req.body); //
     //     try {
-    //       console.log("Hit the file", req.body);
-    //       if (req.file && req.file.path) {
-    //         const result = await cloudinary.uploader.upload(req.file.path, {
-    //           folder: "portfolio",
+    //       if (req.files) {
+    //         const imageUrls = await Promise.all(
+    //           req.files?.map(async (file) => {
+    //             const result = await cloudinary.uploader.upload(file.path, {
+    //               folder: "portfolio",
+    //             });
+    //             // console.log(result);
+    //             return result.secure_url;
+    //           })
+    //         );
+
+    //         const {
+    //           title,
+    //           description,
+    //           technologies,
+    //           clientLive,
+    //           serverLive,
+    //           clientCode,
+    //           serverCode,
+    //           coverUrl,
+    //         } = req.body;
+
+    //         const projectData = {
+    //           title,
+    //           description,
+    //           technologies,
+    //           clientLive,
+    //           clientCode,
+    //           serverCode,
+    //           serverLive,
+    //           imageUrls,
+    //           coverUrl,
+    //           date: new Date(),
+    //         };
+
+    //         const result = await collectionProject.insertOne(projectData);
+
+    //         sendResponse(res, {
+    //           statusCode: 200,
+    //           success: true,
+    //           message: "Project created successfully",
+    //           data: result,
     //         });
-    //         body.image = result.secure_url;
     //       }
-
-    //       const imageUrls = req.files?.map((file) => file.path);
-    //       console.log(imageUrls);
-    //       console.log(req.body);
-
-    //       sendResponse(res, {
-    //         statusCode: 200,
-    //         success: true,
-    //         message: "Project created successfully",
-    //         data: {},
-    //       });
     //     } catch (error) {
-    //       console.error({ error });
+    //       console.error(error);
     //       sendResponse(res, {
     //         statusCode: 500,
     //         success: false,
@@ -231,16 +260,45 @@ async function run() {
       "/create-project",
       upload.array("images", 20),
       async (req, res) => {
-        // console.log("Files:", req.files); // Log files received
-        // console.log("Body:", req.body); //
         try {
           if (req.files) {
             const imageUrls = await Promise.all(
-              req.files?.map(async (file) => {
-                const result = await cloudinary.uploader.upload(file.path, {
-                  folder: "portfolio",
+              req.files.map(async (file) => {
+                // Get the metadata of the image to check dimensions
+                const metadata = await sharp(file.path).metadata();
+
+                // Determine if resizing is necessary
+                let resizedBuffer;
+                if (metadata.width > 1000 || metadata.height > 1000) {
+                  resizedBuffer = await sharp(file.path)
+                    .resize({
+                      width: metadata.width > 1000 ? 1000 : null,
+                      height: metadata.height > 1000 ? 1000 : null,
+                      fit: sharp.fit.inside,
+                      withoutEnlargement: true,
+                    })
+                    .toBuffer();
+                } else {
+                  // If no resizing is needed, read the file directly into a buffer
+                  resizedBuffer = await sharp(file.path).toBuffer();
+                }
+
+                // Upload the image (resized or original) to Cloudinary
+                const result = await new Promise((resolve, reject) => {
+                  const stream = cloudinary.uploader.upload_stream(
+                    {
+                      folder: "portfolio",
+                    },
+                    (error, result) => {
+                      if (error) reject(error);
+                      resolve(result);
+                    }
+                  );
+
+                  // Pipe the buffer into the Cloudinary upload stream
+                  stream.end(resizedBuffer);
                 });
-                // console.log(result);
+
                 return result.secure_url;
               })
             );
