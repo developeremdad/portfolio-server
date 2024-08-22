@@ -20,6 +20,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:3000",
       "https://devemdad.netlify.app",
+      "https://devemdad-dashboard.vercel.app",
     ],
     credentials: true,
   })
