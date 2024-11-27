@@ -182,7 +182,10 @@ async function run() {
 
     // Get all experiences
     app.get("/get-experiences", async (req, res) => {
-      const result = await collectionExperience.find({}).toArray();
+      const result = await collectionExperience
+        .find({})
+        .sort({ date: -1 })
+        .toArray();
 
       sendResponse(res, {
         statusCode: 200,
